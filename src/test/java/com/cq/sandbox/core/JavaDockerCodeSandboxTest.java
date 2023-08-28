@@ -1,23 +1,28 @@
-package com.cq.sandbox;
+package com.cq.sandbox.core;
 
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.json.JSONUtil;
-import com.cq.sandbox.core.CodeSandbox;
-import com.cq.sandbox.core.JavaNativeCodeSandbox;
 import com.cq.sandbox.model.ExecuteCodeRequest;
 import com.cq.sandbox.model.ExecuteCodeResponse;
 import com.cq.sandbox.model.enums.QuestionSubmitLanguageEnum;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import javax.annotation.Resource;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
-class JavaNativeCodeSandboxTest {
+
+@SpringBootTest
+class JavaDockerCodeSandboxTest {
+
+    @Resource
+    private CodeSandbox javaDockerCodeSandbox;
 
     @Test
-    void executeCode() {
-        CodeSandbox codeSandbox = new JavaNativeCodeSandbox();
+    void testExecuteCode() {
         String code = ResourceUtil.readStr("testcode/Main.java", StandardCharsets.UTF_8);
         ExecuteCodeRequest executeCodeRequest = ExecuteCodeRequest
                 .builder()
@@ -25,7 +30,8 @@ class JavaNativeCodeSandboxTest {
                 .language(QuestionSubmitLanguageEnum.JAVA)
                 .code(code)
                 .build();
-        ExecuteCodeResponse executeCodeResponse = codeSandbox.executeCode(executeCodeRequest);
+        ExecuteCodeResponse executeCodeResponse = javaDockerCodeSandbox.executeCode(executeCodeRequest);
         System.out.println(JSONUtil.toJsonStr(executeCodeResponse));
     }
+
 }
