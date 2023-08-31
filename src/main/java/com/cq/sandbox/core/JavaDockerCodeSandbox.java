@@ -1,7 +1,10 @@
 package com.cq.sandbox.core;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.stream.StreamUtil;
 import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.util.StrUtil;
 import com.cq.sandbox.dao.DockerDao;
 import com.cq.sandbox.model.ExecuteCodeRequest;
 import com.cq.sandbox.model.ExecuteCodeResponse;
@@ -10,10 +13,14 @@ import com.cq.sandbox.model.JudgeInfo;
 import com.cq.sandbox.model.enums.LanguageImageEnum;
 import com.cq.sandbox.model.enums.QuestionSubmitLanguageEnum;
 import com.cq.sandbox.utils.ProcessUtil;
+import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
+import com.github.dockerjava.api.command.AttachContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.model.*;
+import com.github.dockerjava.core.command.AttachContainerResultCallback;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
+import com.github.dockerjava.netty.handler.HttpConnectionHijackHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
@@ -58,6 +65,9 @@ public class JavaDockerCodeSandbox implements CodeSandbox {
     @Resource
     private DockerDao dockerDao;
 
+    @Resource
+    private DockerClient dockerClient;
+
 
     @Override
     public ExecuteCodeResponse executeCode(ExecuteCodeRequest executeCodeRequest) {
@@ -87,14 +97,14 @@ public class JavaDockerCodeSandbox implements CodeSandbox {
         // 执行代码
         String image = LanguageImageEnum.JAVA.getImage();
         ExecuteCodeResponse executeCodeResponse = new ExecuteCodeResponse();
-        /*if (FIRST_PULL) {
+        if (FIRST_PULL) {
             try {
                 dockerDao.pullImage(image);
                 FIRST_PULL = false;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-        }*/
+        }
 
         HostConfig hostConfig = new HostConfig();
         hostConfig.withMemory(100 * 1000 * 1000L);
@@ -174,11 +184,11 @@ public class JavaDockerCodeSandbox implements CodeSandbox {
 
                 }
             };
-            try (ResultCallback<Statistics> ignored = dockerDao.getStats(containerId, resultCallback)){
-                InputStream inputStream = new ByteArrayInputStream((input + "\n").getBytes());
+            try (ResultCallback<Statistics> ignored = dockerDao.getStats(containerId, resultCallback)) {
+//                InputStream inputStream = new ByteArrayInputStream(().getBytes());
                 StopWatch stopWatch = new StopWatch();
                 stopWatch.start();
-                dockerDao.executeStart(execId, inputStream, execStartResultCallback);
+                dockerDao.executeStart(execId, IoUtil.toStream(input + "\n", StandardCharsets.UTF_8), execStartResultCallback);
                 stopWatch.stop();
                 maxTime = Math.max(maxTime, stopWatch.getLastTaskTimeMillis());
                 if (resultStream.size() != 0) {

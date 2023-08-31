@@ -2,14 +2,19 @@ package com.cq.sandbox.dao;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
-import com.github.dockerjava.api.command.*;
-import com.github.dockerjava.api.model.*;
+import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.command.ExecCreateCmdResponse;
+import com.github.dockerjava.api.command.PullImageCmd;
+import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.PullResponseItem;
+import com.github.dockerjava.api.model.Statistics;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
+import com.github.dockerjava.core.command.PullImageResultCallback;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;
-import java.io.*;
+import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 
 @Repository
@@ -104,8 +109,8 @@ public class DockerDao {
         try {
             dockerClient
                     .execStartCmd(execId)
+                    .withDetach(false)
                     .withTty(true)
-                    .withExecId(execId)
                     .withStdIn(inputStream)
                     .exec(execStartResultCallback)
                     .awaitCompletion();
