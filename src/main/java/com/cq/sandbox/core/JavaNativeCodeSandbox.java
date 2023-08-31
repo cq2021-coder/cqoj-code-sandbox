@@ -8,6 +8,9 @@ import com.cq.sandbox.model.ExecuteMessage;
 import com.cq.sandbox.model.JudgeInfo;
 import com.cq.sandbox.model.enums.QuestionSubmitLanguageEnum;
 import com.cq.sandbox.utils.ProcessUtil;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StopWatch;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -15,8 +18,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.StopWatch;
 
 
 /**
@@ -32,6 +33,10 @@ public class JavaNativeCodeSandbox implements CodeSandbox {
     private static final String GLOBAL_CODE_DIR_PATH = File.separator + "tempCode";
 
     private static final String GLOBAL_JAVA_CLASS_NAME = File.separator + "Main.java";
+    /**
+     * 超时时间，超过一分钟则结束
+     */
+    public static final Long DEFAULT_TIME_OUT = 60000L;
 
 
     @Override
@@ -56,23 +61,43 @@ public class JavaNativeCodeSandbox implements CodeSandbox {
             String compileCmd = String.format("javac -encoding utf-8 %s", userCodePath);
             Process compileProcess = Runtime.getRuntime().exec(compileCmd);
             ExecuteMessage executeMessage = ProcessUtil.handleProcessMessage(compileProcess, "编译");
+            if (executeMessage.getExitCode() != 0) {
+                FileUtil.del(userCodeParentPath);
+                return ExecuteCodeResponse
+                        .builder()
+                        .status(2)
+                        .message("编译错误")
+                        .build();
+            }
         } catch (IOException e) {
+            FileUtil.del(userCodeParentPath);
             return errorResponse(e);
         }
         // 执行代码
-        String compileCmd = String.format("java -Dfile.encoding=UTF-8 -cp %s Main", userCodeParentPath);
+        String runCmd = String.format("java -Xmx256m -Dfile.encoding=UTF-8 -cp %s Main", userCodeParentPath);
         List<ExecuteMessage> executeMessageList = new LinkedList<>();
         long maxTime = 0;
+        long maxMemory = 0;
         for (String input : inputList) {
-            Process compileProcess;
+            Process runProcess;
             try {
-                compileProcess = Runtime.getRuntime().exec(compileCmd);
+                runProcess = Runtime.getRuntime().exec(runCmd);
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(DEFAULT_TIME_OUT);
+                        log.info("超时了，中断");
+                        runProcess.destroy();
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).start();
             } catch (IOException e) {
+                FileUtil.del(userCodeParentPath);
                 return errorResponse(e);
             }
             StopWatch stopWatch = new StopWatch();
             stopWatch.start();
-            executeMessageList.add(ProcessUtil.handleProcessInteraction(compileProcess, input, "运行"));
+            executeMessageList.add(ProcessUtil.handleProcessInteraction(runProcess, input, "运行"));
             stopWatch.stop();
             maxTime = Math.max(stopWatch.getLastTaskTimeMillis(), maxTime);
         }
@@ -83,13 +108,14 @@ public class JavaNativeCodeSandbox implements CodeSandbox {
         executeCodeResponse.setStatus(1);
         JudgeInfo judgeInfo = new JudgeInfo();
         judgeInfo.setTime(maxTime);
+        judgeInfo.setMemory(maxMemory);
         executeCodeResponse.setJudgeInfo(judgeInfo);
         List<String> outputList = new LinkedList<>();
 
         for (ExecuteMessage executeMessage : executeMessageList) {
             if (ObjectUtil.equal(0, executeMessage.getExitCode())) {
                 outputList.add(executeMessage.getMessage());
-            }else {
+            } else {
                 executeCodeResponse.setMessage(executeMessage.getErrorMessage());
                 executeCodeResponse.setStatus(3);
                 break;
