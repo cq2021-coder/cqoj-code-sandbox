@@ -22,4 +22,6 @@ public class ExecuteMessage {
     private String message;
 
     private String errorMessage;
+
+    private long time;
 }

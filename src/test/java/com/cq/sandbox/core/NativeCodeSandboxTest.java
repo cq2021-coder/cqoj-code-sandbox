@@ -1,22 +1,20 @@
-package com.cq.sandbox;
+package com.cq.sandbox.core;
 
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.json.JSONUtil;
-import com.cq.sandbox.core.CodeSandboxTemplate;
-import com.cq.sandbox.core.JavaNativeCodeSandbox;
 import com.cq.sandbox.model.ExecuteCodeRequest;
 import com.cq.sandbox.model.ExecuteCodeResponse;
+import com.cq.sandbox.model.enums.QuestionSubmitLanguageEnum;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-class JavaNativeCodeSandboxTest {
-
+class NativeCodeSandboxTest {
     @Test
-    void executeCode() {
-        CodeSandboxTemplate codeSandbox = new JavaNativeCodeSandbox();
-        String code = ResourceUtil.readStr("testcode/Main.java", StandardCharsets.UTF_8);
+    void testCpp() {
+        CodeSandboxTemplate codeSandbox = CodeSandboxFactory.getInstance(QuestionSubmitLanguageEnum.CPP);
+        String code = ResourceUtil.readStr("testcode/main.cpp", StandardCharsets.UTF_8);
         ExecuteCodeRequest executeCodeRequest = ExecuteCodeRequest
                 .builder()
                 .inputList(Arrays.asList("1 2", "3 4"))
@@ -25,4 +23,5 @@ class JavaNativeCodeSandboxTest {
         ExecuteCodeResponse executeCodeResponse = codeSandbox.executeCode(executeCodeRequest);
         System.out.println(JSONUtil.toJsonStr(executeCodeResponse));
     }
+
 }

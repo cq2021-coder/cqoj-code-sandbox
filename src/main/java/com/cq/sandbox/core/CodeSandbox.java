@@ -1,4 +1,4 @@
-package com.cq.sandbox;
+package com.cq.sandbox.core;
 
 
 import com.cq.sandbox.model.ExecuteCodeRequest;
