@@ -20,10 +20,7 @@ public enum QuestionSubmitLanguageEnum {
      * 语言类型
      */
     JAVA("java", "java"),
-    CPLUSPLUS("cpp", "cpp"),
-    PYTHON("python", "python"),
-    C("c", "c"),
-    GOLANG("go", "go");
+    CPP("cpp", "cpp");
 
     private final String text;
 
@@ -37,7 +34,7 @@ public enum QuestionSubmitLanguageEnum {
     /**
      * 获取值列表
      *
-     * @return
+     * @return {@link List}<{@link String}>
      */
     public static List<String> getValues() {
         return Arrays.stream(values()).map(item -> item.value).collect(Collectors.toList());
@@ -46,8 +43,8 @@ public enum QuestionSubmitLanguageEnum {
     /**
      * 根据 value 获取枚举
      *
-     * @param value
-     * @return
+     * @param value 值
+     * @return {@link QuestionSubmitLanguageEnum}
      */
     public static QuestionSubmitLanguageEnum getEnumByValue(String value) {
         if (ObjectUtils.isEmpty(value)) {
