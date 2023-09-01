@@ -4,15 +4,12 @@ import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.json.JSONUtil;
 import com.cq.sandbox.model.ExecuteCodeRequest;
 import com.cq.sandbox.model.ExecuteCodeResponse;
-import com.cq.sandbox.model.enums.QuestionSubmitLanguageEnum;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import javax.annotation.Resource;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.List;
 
 
 @SpringBootTest
@@ -27,7 +24,6 @@ class JavaDockerCodeSandboxTest {
         ExecuteCodeRequest executeCodeRequest = ExecuteCodeRequest
                 .builder()
                 .inputList(Arrays.asList("1 2", "3 4"))
-                .language(QuestionSubmitLanguageEnum.JAVA)
                 .code(code)
                 .build();
         ExecuteCodeResponse executeCodeResponse = javaDockerCodeSandbox.executeCode(executeCodeRequest);

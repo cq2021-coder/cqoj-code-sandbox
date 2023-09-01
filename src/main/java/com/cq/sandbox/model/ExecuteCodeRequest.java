@@ -1,6 +1,5 @@
 package com.cq.sandbox.model;
 
-import com.cq.sandbox.model.enums.QuestionSubmitLanguageEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,6 +22,4 @@ public class ExecuteCodeRequest {
     private List<String> inputList;
 
     private String code;
-
-    private QuestionSubmitLanguageEnum language;
 }

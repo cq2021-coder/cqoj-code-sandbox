@@ -9,9 +9,7 @@ import com.cq.sandbox.model.ExecuteCodeResponse;
 import com.cq.sandbox.model.ExecuteMessage;
 import com.cq.sandbox.model.JudgeInfo;
 import com.cq.sandbox.model.enums.LanguageImageEnum;
-import com.cq.sandbox.model.enums.QuestionSubmitLanguageEnum;
 import com.cq.sandbox.utils.ProcessUtil;
-import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.model.*;
@@ -50,11 +48,6 @@ public class JavaDockerCodeSandbox implements CodeSandbox {
 
 
     /**
-     * 超时时间
-     */
-    public static final Long DEFAULT_TIME_OUT = 5L;
-
-    /**
      * 第一次拉取
      */
     private static boolean FIRST_PULL = true;
@@ -62,15 +55,11 @@ public class JavaDockerCodeSandbox implements CodeSandbox {
     @Resource
     private DockerDao dockerDao;
 
-    @Resource
-    private DockerClient dockerClient;
-
 
     @Override
     public ExecuteCodeResponse executeCode(ExecuteCodeRequest executeCodeRequest) {
         List<String> inputList = executeCodeRequest.getInputList();
         String code = executeCodeRequest.getCode();
-        QuestionSubmitLanguageEnum language = executeCodeRequest.getLanguage();
         String userDir = System.getProperty("user.dir");
         String globalCodePath = userDir + GLOBAL_CODE_DIR_PATH;
         if (!FileUtil.exist(globalCodePath)) {
@@ -87,7 +76,7 @@ public class JavaDockerCodeSandbox implements CodeSandbox {
         try {
             String compileCmd = String.format("javac -encoding utf-8 %s", userCodePath);
             Process compileProcess = Runtime.getRuntime().exec(compileCmd);
-            ExecuteMessage executeMessage = ProcessUtil.handleProcessMessage(compileProcess, "编译");
+            ProcessUtil.handleProcessMessage(compileProcess, "编译");
         } catch (IOException e) {
             return errorResponse(e);
         }
@@ -150,7 +139,7 @@ public class JavaDockerCodeSandbox implements CodeSandbox {
                     }
                 }
             };
-            ResultCallback<Statistics> resultCallback = new ResultCallback<Statistics>() {
+            ResultCallback<Statistics> resultCallback = new ResultCallback<>() {
                 @Override
                 public void onStart(Closeable closeable) {
 
