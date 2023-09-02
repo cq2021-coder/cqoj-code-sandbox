@@ -90,26 +90,32 @@ public abstract class CodeSandboxTemplate implements CodeSandbox {
         List<ExecuteMessage> executeMessageList = new LinkedList<>();
         for (String input : inputList) {
             Process runProcess;
+            Thread computeTimeThread;
             try {
                 runProcess = Runtime.getRuntime().exec(runCmd);
-                new Thread(() -> {
+                computeTimeThread = new Thread(() -> {
                     try {
                         Thread.sleep(DEFAULT_TIME_OUT);
-                        log.info("超时了，中断");
-                        runProcess.destroy();
+                        if (runProcess.isAlive()) {
+                            log.info("超时了，中断");
+                            runProcess.destroy();
+                        }
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
-                }).start();
+                });
+                computeTimeThread.start();
+                StopWatch stopWatch = new StopWatch();
+                stopWatch.start();
+                ExecuteMessage executeMessage = ProcessUtil.handleProcessInteraction(runProcess, input, "运行");
+                stopWatch.stop();
+                computeTimeThread.stop();
+                executeMessage.setTime(stopWatch.getLastTaskTimeMillis());
+                executeMessageList.add(executeMessage);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            StopWatch stopWatch = new StopWatch();
-            stopWatch.start();
-            ExecuteMessage executeMessage = ProcessUtil.handleProcessInteraction(runProcess, input, "运行");
-            stopWatch.stop();
-            executeMessage.setTime(stopWatch.getLastTaskTimeMillis());
-            executeMessageList.add(executeMessage);
+
         }
         return executeMessageList;
     }
