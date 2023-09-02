@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.OutputStream;
 
 /**
  * 进程处理工具类
@@ -62,17 +62,17 @@ public class ProcessUtil {
 
 
     public static ExecuteMessage handleProcessInteraction(Process runProcess, String input, String operationName) {
-        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(runProcess.getOutputStream());
+        OutputStream outputStream = runProcess.getOutputStream();
         try {
-            outputStreamWriter.write(input);
-            outputStreamWriter.write("\n");
-            outputStreamWriter.flush();
+            outputStream.write((input + "\n").getBytes());
+            outputStream.flush();
+            outputStream.close();
             return handleProcessMessage(runProcess, operationName);
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
             try {
-                outputStreamWriter.close();
+                outputStream.close();
             } catch (IOException e) {
                 log.error("关闭输入流失败");
             }
