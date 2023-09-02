@@ -37,7 +37,6 @@ public abstract class CodeSandboxTemplate implements CodeSandbox {
     public static final Long DEFAULT_TIME_OUT = 10000L;
 
 
-
     /**
      * 每个实现类必须实现编译以及运行的cmd
      *
@@ -45,7 +44,7 @@ public abstract class CodeSandboxTemplate implements CodeSandbox {
      * @param userCodePath       代码所在目录
      * @return {@link CodeSandboxCmd}
      */
-    public abstract CodeSandboxCmd getCmd(String userCodeParentPath, String userCodePath);
+    abstract CodeSandboxCmd getCmd(String userCodeParentPath, String userCodePath);
 
     /**
      * 保存代码到文件中，注意这里需要实现，不同编程语言要放到不同文件夹中
@@ -54,7 +53,7 @@ public abstract class CodeSandboxTemplate implements CodeSandbox {
      * @param code 代码
      * @return {@link File}
      */
-    public File saveCodeToFile(String code) {
+    private File saveCodeToFile(String code) {
         String globalCodePath = System.getProperty("user.dir") + globalCodeDirPath;
         if (!FileUtil.exist(globalCodePath)) {
             FileUtil.mkdir(globalCodePath);
@@ -73,7 +72,7 @@ public abstract class CodeSandboxTemplate implements CodeSandbox {
      * @return {@link ExecuteMessage}
      * @throws IOException IOException
      */
-    public ExecuteMessage compileCode(String compileCmd) throws IOException {
+    private ExecuteMessage compileCode(String compileCmd) throws IOException {
         Process compileProcess = Runtime.getRuntime().exec(compileCmd);
         return ProcessUtil.handleProcessMessage(compileProcess, "编译");
     }
@@ -87,30 +86,36 @@ public abstract class CodeSandboxTemplate implements CodeSandbox {
      * @return {@link List}<{@link ExecuteMessage}>
      * @throws RuntimeException RuntimeException
      */
-    public List<ExecuteMessage> runCode(List<String> inputList, String runCmd) throws RuntimeException {
+    private List<ExecuteMessage> runCode(List<String> inputList, String runCmd) throws RuntimeException {
         List<ExecuteMessage> executeMessageList = new LinkedList<>();
         for (String input : inputList) {
             Process runProcess;
+            Thread computeTimeThread;
             try {
                 runProcess = Runtime.getRuntime().exec(runCmd);
-                new Thread(() -> {
+                computeTimeThread = new Thread(() -> {
                     try {
                         Thread.sleep(DEFAULT_TIME_OUT);
-                        log.info("超时了，中断");
-                        runProcess.destroy();
+                        if (runProcess.isAlive()) {
+                            log.info("超时了，中断");
+                            runProcess.destroy();
+                        }
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
-                }).start();
+                });
+                computeTimeThread.start();
+                StopWatch stopWatch = new StopWatch();
+                stopWatch.start();
+                ExecuteMessage executeMessage = ProcessUtil.handleProcessInteraction(runProcess, input, "运行");
+                stopWatch.stop();
+                computeTimeThread.stop();
+                executeMessage.setTime(stopWatch.getLastTaskTimeMillis());
+                executeMessageList.add(executeMessage);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            StopWatch stopWatch = new StopWatch();
-            stopWatch.start();
-            ExecuteMessage executeMessage = ProcessUtil.handleProcessInteraction(runProcess, input, "运行");
-            stopWatch.stop();
-            executeMessage.setTime(stopWatch.getLastTaskTimeMillis());
-            executeMessageList.add(executeMessage);
+
         }
         return executeMessageList;
     }
