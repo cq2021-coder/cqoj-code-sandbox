@@ -1,5 +1,6 @@
 package com.cq.sandbox.model;
 
+import com.cq.sandbox.model.enums.JudgeInfoMessageEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,6 +26,8 @@ public class ExecuteCodeResponse {
      * 接口信息
      */
     private String message;
+
+    private JudgeInfoMessageEnum resultType;
 
     /**
      * 执行状态

@@ -3,6 +3,7 @@ package com.cq.sandbox.core;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.cq.sandbox.model.*;
+import com.cq.sandbox.model.enums.JudgeInfoMessageEnum;
 import com.cq.sandbox.utils.ProcessUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StopWatch;
@@ -100,6 +101,14 @@ public abstract class CodeSandboxTemplate implements CodeSandbox {
                             log.info("超时了，中断");
                             runProcess.destroy();
                         }
+                        executeMessageList.add(
+                                ExecuteMessage
+                                        .builder()
+                                        .exitCode(-10001)
+                                        .errorMessage("超时")
+                                        .time(DEFAULT_TIME_OUT)
+                                        .build()
+                        );
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
@@ -141,6 +150,7 @@ public abstract class CodeSandboxTemplate implements CodeSandbox {
                         .builder()
                         .status(2)
                         .message("编译错误")
+                        .resultType(JudgeInfoMessageEnum.COMPILE_ERROR)
                         .build();
             }
         } catch (IOException e) {
@@ -154,6 +164,7 @@ public abstract class CodeSandboxTemplate implements CodeSandbox {
             // 返回处理结果
             ExecuteCodeResponse executeCodeResponse = new ExecuteCodeResponse();
             executeCodeResponse.setStatus(1);
+            executeCodeResponse.setResultType(JudgeInfoMessageEnum.ACCEPTED);
             JudgeInfo judgeInfo = new JudgeInfo();
             executeCodeResponse.setJudgeInfo(judgeInfo);
             List<String> outputList = new LinkedList<>();
@@ -162,8 +173,17 @@ public abstract class CodeSandboxTemplate implements CodeSandbox {
             for (ExecuteMessage executeMessage : executeMessageList) {
                 if (ObjectUtil.equal(0, executeMessage.getExitCode())) {
                     outputList.add(executeMessage.getMessage());
+                } else if (ObjectUtil.equal(-10001, executeMessage.getExitCode())) {
+                    executeCodeResponse.setMessage(executeMessage.getErrorMessage());
+                    executeCodeResponse.setResultType(JudgeInfoMessageEnum.TIME_LIMIT_EXCEEDED);
+                    JudgeInfo timeoutJudgeInfo = new JudgeInfo();
+                    timeoutJudgeInfo.setTime(executeMessage.getTime());
+                    executeCodeResponse.setJudgeInfo(timeoutJudgeInfo);
+                    executeCodeResponse.setStatus(3);
+                    break;
                 } else {
                     executeCodeResponse.setMessage(executeMessage.getErrorMessage());
+                    executeCodeResponse.setResultType(JudgeInfoMessageEnum.RUNTIME_ERROR);
                     executeCodeResponse.setStatus(3);
                     break;
                 }
@@ -183,6 +203,7 @@ public abstract class CodeSandboxTemplate implements CodeSandbox {
         return ExecuteCodeResponse
                 .builder()
                 .outputList(new ArrayList<>())
+                .resultType(JudgeInfoMessageEnum.SYSTEM_ERROR)
                 .message(e.getMessage())
                 .judgeInfo(new JudgeInfo())
                 .status(2)
